@@ -9,10 +9,10 @@ class List
 {
 private:
 	const int ITERATOR_COUNT = 12; // 10 + beginning + ending
-	const int MAX_CARRIES = 1;
+	const int MAX_CARRIES = 1; // caps the amount of blocks that will be searched for a place to put carried data before trying to split the block
 
-	const int blockPreviousByte;
-	const int blockNextByte;
+	const int blockNextByte;		// these 4 hold the bytes where corresponding parts of the block begin
+	const int blockPreviousByte;	
 	const int blockSizeByte;
 	const int blockArrayByte;
 
@@ -23,8 +23,8 @@ private:
 	byte* firstBlock;
 	byte* lastBlock;
 
-	int blocks;
-	int datas;
+	int blocks; // amount of blocks at the moment
+	int datas; // amount of numbers inside all the blocks at the moment
 
 
 	byte* newBlock(int sizeBytes); // returns new block of given size
@@ -38,7 +38,8 @@ private:
 	void blockSizeDown(byte* block); // decreases block size counter by 1
 	bool blockFull(byte* block) const; // true if block is full, false if theres some space left
 	void appendNewBlock(); // adds new block on top of the last one
-	void blockSplit(byte* block);
+	void blockSplit(byte* block); // splits the block into two
+	void tryToSplit(byte* block);
 	void blockFuse(byte* left); // will copy the next block of left and delete it
 	static DATA blockGet(byte* block, int pos); // returns DATA from a block, pos is between 0 and maxBlockSize-1
 	DATA blockGetLast(byte* block) const;
@@ -70,8 +71,6 @@ public:
 	void printAtIterator(int iterator) const;
 	void append(DATA data);
 
-	int length();
-	DATA operator[](int n) const;
 	void print() const;
 	~List();
 };

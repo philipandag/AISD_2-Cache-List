@@ -1,7 +1,5 @@
 #include "List.h"
 
-//TODO make A split block in half instead of pushing the end to a new block
-//TOTO make R fuse neighbouring blocks if its possible
 // ################### BLOCK OPERATIONS ####################
 
 byte* List::newBlock(int sizeBytes)
@@ -107,18 +105,17 @@ void List::blockFuse(byte* left)
 	byte* right = blockGetNext(left);
 	for (int i = 0; i < blockGetSize(right); i++)
 	{
-		addToBlock(left, blockGet(right, i)); // copies right to the end of left
+		addToBlock(left, blockGet(right, i)); // copies from right to the end of left
 	}
 	blockDelete(right);
 }
 
 void List::updateIterators()
 {
-
 	byte* next;
 	byte* previous;
 	int size;
-	for (int i = 0; i < ITERATOR_COUNT - 2; i++) // - BEG and END which are at the end of the iterators arrays
+	for (int i = 0; i < ITERATOR_COUNT - 2; i++) // minus BEG and END which are at the end of the iterators arrays
 	{
 		byte* block = iteratorsBlock[i];
 		int pos = iteratorsPos[i];
@@ -154,6 +151,7 @@ void List::updateIterators()
 		resetList();
 	}
 }
+
 void List::appendNewBlock()
 {
 	byte* block = newBlock(maxBlockSizeBytes);
@@ -186,11 +184,10 @@ byte* List::getBlock(int n) const
 
 // ################### LIST ####################
 
-
 List::List(int blockSizeBytes) :
-	blockPreviousByte(blockSizeBytes - 2 * sizeof(byte*)), // - own size & blockNextByte size to put it in front of blockNextByte
-	blockNextByte(blockSizeBytes - sizeof(byte*)), // end - its own size to point at the beginning
-	blockSizeByte(blockSizeBytes - 2 * sizeof(byte*) - sizeof(int)), // again - own size - proceeding fields sizes
+	blockNextByte(blockSizeBytes - sizeof(byte*)), // end minus its own size to point at the beginning
+	blockPreviousByte(blockSizeBytes - 2 * sizeof(byte*)), // minus own size & blockNextByte size to put it in front of blockNextByte
+	blockSizeByte(blockSizeBytes - 2 * sizeof(byte*) - sizeof(int)), // again minus own size minus preceeding fields sizes
 	blockArrayByte(0),
 	maxBlockSizeBytes(blockSizeBytes),
 	maxBlockSize((blockSizeBytes - 2 * sizeof(byte*) - sizeof(int)) / sizeof(DATA)), // (total - memory taken by two pointers and int) / data = how many
@@ -199,21 +196,19 @@ List::List(int blockSizeBytes) :
 	blocks(0),
 	datas(0),
 	iteratorsBlock((byte**)malloc(sizeof(byte*)* ITERATOR_COUNT)),                                                           // data pieces can still fit 
-	iteratorsPos((int*)malloc(sizeof(int)* ITERATOR_COUNT))                                                           // data pieces can still fit 
+	iteratorsPos((int*)malloc(sizeof(int)* ITERATOR_COUNT))                                          
 {
 	for (int i = 0; i < ITERATOR_COUNT; i++)
 	{
 		iteratorsBlock[i] = nullptr;
 		iteratorsPos[i] = -1;
 	}
-	if ((int)maxBlockSize < 1) // maxBlockSize is int so it needs to be cast to int to compare
+	if (maxBlockSize < 1)
 	{
 		fprintf(stderr, "Error, block size too small!");
 		exit(0);
 	}
 }
-
-
 
 void List::setIterator(int iterator, int position)
 {
@@ -238,6 +233,7 @@ void List::blockInsert(byte* block, int pos, DATA data)
 	*((DATA*)block + pos) = data;
 }
 
+
 void List::addAt(byte* block, int pos, DATA data)
 {
 	int size;
@@ -245,21 +241,23 @@ void List::addAt(byte* block, int pos, DATA data)
 	byte* next;
 	int possibleCarries = MAX_CARRIES;
 
-	while (possibleCarries >= 0)
-	{
+	while (possibleCarries >= 0) // it would be hard to split this function because of all the diferrent  
+	{							// cases which modify local variables and the necessity of having a loop to prevent stack overflowing
+		
 		if (block == nullptr) // no blocks so create one and add the data to it
 		{
 			append(data);
 			return;
 		}
 		size = blockGetSize(block);
+
 		if (pos == size && pos < maxBlockSize) //if on the end of a block, just add
 		{
 			addToBlock(block, data);
 			return;
 		}
 
-		if (possibleCarries > 0 && pos >= maxBlockSize) // carry to the next block if pos exceeds this block
+		if (possibleCarries > 0 && pos >= maxBlockSize) // carry to the next block if pos exceeds this block ( may happen when adding after the last pos )
 		{
 			block = blockGetNext(block);
 			pos -= maxBlockSize;
@@ -267,20 +265,19 @@ void List::addAt(byte* block, int pos, DATA data)
 			continue;
 		}
 
-		size = blockGetSize(block);
 		copy = blockGetLast(block); // copies last DATA piece not to lose it while moving
 		blockInsert(block, pos, data);
 
-		if (size + 1 <= maxBlockSize) // if nothing to carry
+		if (size + 1 <= maxBlockSize) // if nothing to carry return the copied last element 
 		{
 			addToBlock(block, copy);
 			return;
 		}
 
-		if (possibleCarries > 0)
+		if (possibleCarries > 0) // push the copied last element forward
 		{
 			next = blockGetNext(block);
-			if (next != nullptr)
+			if (next != nullptr) 
 			{
 				block = next;
 				pos = 0;
@@ -294,7 +291,7 @@ void List::addAt(byte* block, int pos, DATA data)
 				return;
 			}
 		}
-		else
+		else // if out of possible carries split the block in half to make some space 
 		{
 			blockSplit(block);
 			addToBlock(blockGetNext(block), copy);
@@ -309,6 +306,8 @@ byte* List::appendNewBlockAfter(byte* block)
 	blockSetNext(block, freshBlock);
 	blockSetNext(freshBlock, blockGetNext(block));
 	blockSetPrevious(freshBlock, block);
+	if (lastBlock == block)
+		lastBlock = freshBlock;
 	return freshBlock;
 }
 
@@ -355,17 +354,19 @@ void List::blockDelete(byte* block)
 void List::removeAt(byte* block, int pos)
 {
 	int size = blockGetSize(block);
-	byte* next = blockGetNext(block);
-	byte* previous = blockGetPrevious(block);
 	if (size > 1)
-	{
 		for (int i = pos; i < size - 1; i++) // -1 to not set the last DATA as something off the block
-		{
 			*blockGetP(block, i) = blockGet(block, i + 1);
-		}
-	}
+
 	blockSizeDown(block);
 	updateIterators();
+}
+
+void List::tryToSplit(byte* block)
+{
+	int size = blockGetSize(block);
+	byte* next = blockGetNext(block);
+	byte* previous = blockGetPrevious(block);
 	if (blockGetSize(block) == 0)
 	{
 		blockDelete(block);
@@ -434,6 +435,7 @@ DATA List::getIteratorValue(int iterator) const
 {
 	return *((DATA*)iteratorsBlock[iterator] + iteratorsPos[iterator]);
 }
+
 void List::printAtIterator(int iterator) const
 {
 	printf("%llu\n", getIteratorValue(iterator));
@@ -454,25 +456,14 @@ void List::append(DATA data)
 	addToBlock(lastBlock, data);
 }
 
-DATA List::operator[](int n) const
-{
-	int nBlock = n / maxBlockSizeBytes;
-	int nPos = n - (nBlock * maxBlockSizeBytes);
-
-	return blockGet(getBlock(nBlock), nPos);
-}
-
 void List::print() const
 {
 	byte* block = firstBlock;
-	printf("List:\n");
 	for (int nBlock = 0; nBlock < blocks; nBlock++)
 	{
-		printf("\tBlock %d:\n", nBlock);
 		for (int nItem = 0; nItem < blockGetSize(block); nItem++)
 		{
-			printf("\t\tItem %d: %llu\n", nItem, blockGet(block, nItem));
-			//printf("%llu ", blockGet(block, nItem));
+			printf("%llu ", blockGet(block, nItem));
 		}
 		block = blockGetNext(block);
 	}
