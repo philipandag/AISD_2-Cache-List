@@ -1,5 +1,7 @@
 #include "List.h"
 
+//TODO make A split block in half instead of pushing the end to a new block
+//TOTO make R fuse neighbouring blocks if its possible
 // ################### BLOCK OPERATIONS ####################
 
 byte* List::newBlock(int sizeBytes)
@@ -79,6 +81,35 @@ void List::addToBlock(byte* block, DATA data)
 bool List::blockFull(byte* block) const
 {
 	return blockGetSize(block) >= maxBlockSize;
+}
+
+void List::blockSplit(byte* block)
+{
+	byte* next = blockGetNext(block);
+	byte* freshBlock = appendNewBlockAfter(block);
+	int size = blockGetSize(block);
+	for (int i = 0; i < size/2; i++)
+	{
+		*blockGetP(freshBlock, i) = blockGet(block, size/2 + 1 + i);
+		blockSizeDown(block);
+		blockSizeUp(freshBlock);
+	}
+
+	blockSetNext(freshBlock, next);
+	if(next != nullptr)
+		blockSetPrevious(next, freshBlock);
+	blocks++;
+	updateIterators();
+}
+
+void List::blockFuse(byte* left)
+{
+	byte* right = blockGetNext(left);
+	for (int i = 0; i < blockGetSize(right); i++)
+	{
+		addToBlock(left, blockGet(right, i)); // copies right to the end of left
+	}
+	blockDelete(right);
 }
 
 void List::updateIterators()
@@ -203,13 +234,6 @@ void List::blockInsert(byte* block, int pos, DATA data)
 	for (int i = blockGetSize(block) - 1; i > pos; i--) // signed/unsigned mismatch is not a problem here, it protects from overflow when size == 0, 
 	{
 		*((DATA*)block + i) = *((DATA*)block + i - 1);
-
-
-
-		//
-		// 
-		//
-		//
 	}
 	*((DATA*)block + pos) = data;
 }
@@ -272,7 +296,8 @@ void List::addAt(byte* block, int pos, DATA data)
 		}
 		else
 		{
-			addToBlock(appendNewBlockAfter(block), copy);
+			blockSplit(block);
+			addToBlock(blockGetNext(block), copy);
 			return;
 		}
 	}
@@ -330,6 +355,8 @@ void List::blockDelete(byte* block)
 void List::removeAt(byte* block, int pos)
 {
 	int size = blockGetSize(block);
+	byte* next = blockGetNext(block);
+	byte* previous = blockGetPrevious(block);
 	if (size > 1)
 	{
 		for (int i = pos; i < size - 1; i++) // -1 to not set the last DATA as something off the block
@@ -342,6 +369,25 @@ void List::removeAt(byte* block, int pos)
 	if (blockGetSize(block) == 0)
 	{
 		blockDelete(block);
+	}
+	else
+	{
+		if (next != nullptr)
+		{
+			if (size + blockGetSize(next) <= maxBlockSize)
+			{
+				blockFuse(block);
+				return;
+			}
+		}
+		if (previous != nullptr)
+		{
+			if (size + blockGetSize(previous) <= maxBlockSize)
+			{
+				blockFuse(previous);
+				return;
+			}
+		}
 	}
 }
 
@@ -419,14 +465,14 @@ DATA List::operator[](int n) const
 void List::print() const
 {
 	byte* block = firstBlock;
-	//printf("List:\n");
+	printf("List:\n");
 	for (int nBlock = 0; nBlock < blocks; nBlock++)
 	{
-		//printf("\tBlock %d:\n", nBlock);
+		printf("\tBlock %d:\n", nBlock);
 		for (int nItem = 0; nItem < blockGetSize(block); nItem++)
 		{
-			//printf("\t\tItem %d: %llu\n", nItem, blockGet(block, nItem));
-			printf("%llu ", blockGet(block, nItem));
+			printf("\t\tItem %d: %llu\n", nItem, blockGet(block, nItem));
+			//printf("%llu ", blockGet(block, nItem));
 		}
 		block = blockGetNext(block);
 	}

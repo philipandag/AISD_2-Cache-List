@@ -38,6 +38,8 @@ private:
 	void blockSizeDown(byte* block); // decreases block size counter by 1
 	bool blockFull(byte* block) const; // true if block is full, false if theres some space left
 	void appendNewBlock(); // adds new block on top of the last one
+	void blockSplit(byte* block);
+	void blockFuse(byte* left); // will copy the next block of left and delete it
 	static DATA blockGet(byte* block, int pos); // returns DATA from a block, pos is between 0 and maxBlockSize-1
 	DATA blockGetLast(byte* block) const;
 	static DATA* blockGetP(byte* block, int pos); // just like blockGet, but returns a pointer
