@@ -39,7 +39,7 @@ private:
 	bool blockFull(byte* block) const; // true if block is full, false if theres some space left
 	void appendNewBlock(); // adds new block on top of the last one
 	void blockSplit(byte* block); // splits the block into two
-	void tryToSplit(byte* block);
+	void tryToFuse(byte* block);
 	void blockFuse(byte* left); // will copy the next block of left and delete it
 	static DATA blockGet(byte* block, int pos); // returns DATA from a block, pos is between 0 and maxBlockSize-1
 	DATA blockGetLast(byte* block) const;

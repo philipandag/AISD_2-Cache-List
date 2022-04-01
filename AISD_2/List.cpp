@@ -360,9 +360,10 @@ void List::removeAt(byte* block, int pos)
 
 	blockSizeDown(block);
 	updateIterators();
+	tryToFuse(block);
 }
 
-void List::tryToSplit(byte* block)
+void List::tryToFuse(byte* block)
 {
 	int size = blockGetSize(block);
 	byte* next = blockGetNext(block);
