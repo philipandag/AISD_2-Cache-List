@@ -5,7 +5,7 @@
 #include "List.h"
 
 #define TYPE unsigned long long
-#define ITERATORS 10;
+#define ITERATORS 10
 
 namespace Commands {
 	enum Enum {
@@ -19,14 +19,15 @@ namespace Commands {
 		PRINT_AT,
 		WRONG_COMMAND,
 	};
-	const int AMOUNT = 8;
-	extern const char* NAMES[AMOUNT];
+	const int COMMANDS_AMOUNT = 8;
+	const int ARGS_AMOUNT = 8;
+	extern const char* NAMES[ARGS_AMOUNT];
 	enum Args {
 		BEG = 0,
 		END,
 		ALL,
 	};
-	extern const char* ARGS[AMOUNT];
+	extern const char* ARGS[ARGS_AMOUNT];
 }
 
 const int INPUT_BUFFER_SIZE = 64;

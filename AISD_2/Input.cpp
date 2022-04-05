@@ -2,7 +2,7 @@
 #include "Input.h"
 
 namespace Commands {
-	const char* NAMES[AMOUNT] = {
+	const char* NAMES[COMMANDS_AMOUNT] = {
 		"I",
 		"i",
 		"+",
@@ -12,7 +12,7 @@ namespace Commands {
 		"R",
 		"P",
 	};
-	extern const char* ARGS[AMOUNT] = {
+	extern const char* ARGS[ARGS_AMOUNT] = {
 		"BEG",
 		"END",
 		"ALL",
@@ -22,7 +22,7 @@ namespace Commands {
 Commands::Enum getCommand(char* const buffer)
 {
 	char firstWord[INPUT_BUFFER_SIZE];
-	for (int i = 0; i < Commands::AMOUNT; i++)
+	for (int i = 0; i < Commands::COMMANDS_AMOUNT; i++)
 	{
 		if (strcmp(Commands::NAMES[i], getOneWord(buffer, firstWord)) == 0)
 			return (Commands::Enum)i;
@@ -58,6 +58,8 @@ void listInit(List** list)
 	scanf_s("%s", args, INPUT_BUFFER_SIZE);
 	if (isANumber(args))
 	{
+		if (*list != nullptr)
+			delete (*list);
 		*list = new List(atoi(args));
 		List l = **list;
 	}
@@ -76,10 +78,8 @@ void iteratorInit(List** list)
 	else
 	{
 		int pos = atoi(arg2);
-		if (pos >= 0 && pos < 10)
+		if (pos >= 0 && pos < ITERATORS)
 			(*list)->copyIterator(iterator, pos);
-		else
-			(*list)->setIterator(iterator, pos);
 	}
 }
 
@@ -109,7 +109,8 @@ void addBefore(List** list)
 	else if (isANumber(iterator))
 	{
 		int nIterator = atoi(iterator);
-		(*list)->addBefore(nIterator, data);
+		if (nIterator >= 0 && nIterator < 10)
+			(*list)->addBefore(nIterator, data);
 	}
 }
 
@@ -125,7 +126,8 @@ void addAfter(List** list)
 	else if (isANumber(iterator))
 	{
 		int nIterator = atoi(iterator);
-		(*list)->addAfter(nIterator, data);
+		if (nIterator >= 0 && nIterator < 10)
+			(*list)->addAfter(nIterator, data);
 	}
 }
 
@@ -138,7 +140,12 @@ void removeAt(List** list)
 	else if (strcmp(arg, Commands::ARGS[Commands::Args::END]) == 0)
 		(*list)->removeAtIterator((*list)->END);
 	else if (isANumber(arg))
-		(*list)->removeAtIterator(atoi(arg));
+	{
+		int iterator = atoi(arg);
+		if (iterator >= 0 && iterator < 10)
+			(*list)->removeAtIterator(iterator);
+	}
+
 }
 
 void printAt(List** list)
@@ -151,7 +158,7 @@ void printAt(List** list)
 	else if (isANumber(arg))
 	{
 		int iterator = atoi(arg);
-		if (iterator >= 0)
+		if (iterator >= 0 && iterator < ITERATORS)
 			(*list)->printAtIterator(iterator);
 	}
 }
@@ -165,35 +172,42 @@ bool performCommand(List** list)
 		return false;
 
 	Commands::Enum command = getCommand(buffer);
-	switch (command)
-	{
-	case Commands::LIST_INIT:
+
+	if (command == Commands::LIST_INIT)
 		listInit(list);
-		break;
-	case Commands::ITERATOR_INIT:
-		iteratorInit(list);
-		break;
-	case Commands::ITERATOR_FORWARD:
-		iteratorForward(list);
-		break;
-	case Commands::ITERATOR_BACKWARD:
-		iteratorBackward(list);
-		break;
-	case Commands::ADD_BEFORE:
-		addBefore(list);
-		break;
-	case Commands::ADD_AFTER:
-		addAfter(list);
-		break;
-	case Commands::REMOVE_AT:
-		removeAt(list);
-		break;
-	case Commands::PRINT_AT:
-		printAt(list);
-		break;
-	default:
-		break;
+	else if (*list != nullptr)
+	{
+		switch (command)
+		{
+		case Commands::LIST_INIT:
+			listInit(list);
+			break;
+		case Commands::ITERATOR_INIT:
+			iteratorInit(list);
+			break;
+		case Commands::ITERATOR_FORWARD:
+			iteratorForward(list);
+			break;
+		case Commands::ITERATOR_BACKWARD:
+			iteratorBackward(list);
+			break;
+		case Commands::ADD_BEFORE:
+			addBefore(list);
+			break;
+		case Commands::ADD_AFTER:
+			addAfter(list);
+			break;
+		case Commands::REMOVE_AT:
+			removeAt(list);
+			break;
+		case Commands::PRINT_AT:
+			printAt(list);
+			break;
+		default:
+			break;
+		}
 	}
+
 	return true;
 }
 
