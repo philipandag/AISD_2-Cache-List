@@ -109,7 +109,7 @@ void addBefore(List** list)
 	else if (isANumber(iterator))
 	{
 		int nIterator = atoi(iterator);
-		if (nIterator >= 0 && nIterator < 10)
+		if (nIterator >= 0 && nIterator < ITERATORS)
 			(*list)->addBefore(nIterator, data);
 	}
 }
@@ -126,7 +126,7 @@ void addAfter(List** list)
 	else if (isANumber(iterator))
 	{
 		int nIterator = atoi(iterator);
-		if (nIterator >= 0 && nIterator < 10)
+		if (nIterator >= 0 && nIterator < ITERATORS)
 			(*list)->addAfter(nIterator, data);
 	}
 }
@@ -142,7 +142,7 @@ void removeAt(List** list)
 	else if (isANumber(arg))
 	{
 		int iterator = atoi(arg);
-		if (iterator >= 0 && iterator < 10)
+		if (iterator >= 0 && iterator < ITERATORS)
 			(*list)->removeAtIterator(iterator);
 	}
 

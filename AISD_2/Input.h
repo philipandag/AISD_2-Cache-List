@@ -37,13 +37,18 @@ const int INPUT_BUFFER_SIZE = 64;
 
 Commands::Enum getCommand(char* buffer);
 
-char* skipOneWord(char* buffer);
+bool isANumber(const char* text);
 
-// Remember to free the returned string
 char* getOneWord(char* buffer, char* oneWord);
 
 void listInit(char* buffer, List** list);
+void iteratorInit(List** list);
+void iteratorForward(List** list);
+void iteratorBackward(List** list);
+void addBefore(List** list);
+void addAfter(List** list);
+void removeAt(List** list);
+void printAt(List** list);
 
 bool performCommand(List** list);
-
 void inputLoop(List** list);
